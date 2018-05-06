@@ -1,0 +1,20 @@
+<html>
+    <!-- This tip is from https://blog.ilias.xyz/elm-reactor-and-custom-html-9e7143553807 -->
+<head>
+  <style>
+    /* custom styles? Sure! */
+  </style>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.rawgit.com/twbs/bootstrap/48938155eb24b4ccdde09426066869504c6dab3c/dist/css/bootstrap.min.css">
+  <link rel="shortcut icon" type="image/x-icon" href="favicon.png">
+</head>
+<body>
+  <!-- Relative to index.html, main.elm lives in `src/Main.elm`. -->
+  <!-- Prefixing that with `/_compile/` gives us magic! -->
+  <script src="/_compile/src/Main.elm"></script>
+  <script>
+    var app = Elm.Main.fullscreen()
+    // You could also pass flags, or setup some ports, ...
+  </script>
+</body>
+</html>
