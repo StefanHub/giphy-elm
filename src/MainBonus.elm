@@ -1,4 +1,4 @@
-module MainBonus exposing (..)
+module MainBonus exposing (Model, Msg(..), debounce, init, main, searchBar, searchGiphys, subscriptions, to2DigitString, toClock, update, view, viewDetail, viewError, viewList, viewListItem, viewListItems)
 
 import Control exposing (..)
 import Control.Debounce exposing (..)
@@ -91,7 +91,7 @@ update msg model =
                     )
 
                 Err err ->
-                    ( { model | error = Just (toString err) }, Cmd.none )
+                    ( { model | error = Just (String.fromInt err) }, Cmd.none )
 
         GiphySelect giphyData ->
             ( { model | selected = Just giphyData }, Cmd.none )

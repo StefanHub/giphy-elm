@@ -1,7 +1,7 @@
-module JsonDecode exposing (..)
+module JsonDecode exposing (GiphyData, GiphyImage, GiphyImages, GiphyResult, decodeGiphyData, decodeGiphyImage, decodeGiphyImages, decodeGiphyResult)
 
-import Json.Decode exposing (Decoder, decodeString, list, string)
-import Json.Decode.Pipeline exposing (decode, required)
+import Json.Decode as Decode
+import Json.Decode.Pipeline as Pipeline
 
 
 type alias GiphyResult =
@@ -28,29 +28,29 @@ type alias GiphyImage =
     }
 
 
-decodeGiphyResult : Decoder GiphyResult
+decodeGiphyResult : Decode.Decoder GiphyResult
 decodeGiphyResult =
-    decode GiphyResult
-        |> required "data" (list decodeGiphyData)
+    Decode.succeed GiphyResult
+        |> Pipeline.required "data" (Decode.list decodeGiphyData)
 
 
-decodeGiphyData : Decoder GiphyData
+decodeGiphyData : Decode.Decoder GiphyData
 decodeGiphyData =
-    decode GiphyData
-        |> required "embed_url" string
-        |> required "slug" string
-        |> required "images" decodeGiphyImages
+    Decode.succeed GiphyData
+        |> Pipeline.required "embed_url" Decode.string
+        |> Pipeline.required "slug" Decode.string
+        |> Pipeline.required "images" decodeGiphyImages
 
 
-decodeGiphyImages : Decoder GiphyImages
+decodeGiphyImages : Decode.Decoder GiphyImages
 decodeGiphyImages =
-    decode GiphyImages
-        |> required "fixed_width" decodeGiphyImage
-        |> required "fixed_height_small_still" decodeGiphyImage
-        |> required "original" decodeGiphyImage
+    Decode.succeed GiphyImages
+        |> Pipeline.required "fixed_width" decodeGiphyImage
+        |> Pipeline.required "fixed_height_small_still" decodeGiphyImage
+        |> Pipeline.required "original" decodeGiphyImage
 
 
-decodeGiphyImage : Decoder GiphyImage
+decodeGiphyImage : Decode.Decoder GiphyImage
 decodeGiphyImage =
-    decode GiphyImage
-        |> required "url" string
+    Decode.succeed GiphyImage
+        |> Pipeline.required "url" Decode.string

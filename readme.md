@@ -1,5 +1,5 @@
 # Elm
-This project uses Elm. If not already done, install it with
+This project uses Elm 0.19. If not already done, install it with
 `npm install -g elm`
 
 # Install dependencies

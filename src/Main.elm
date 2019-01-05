@@ -1,24 +1,32 @@
-module Main exposing (..)
+module Main exposing (main)
 
-import Control exposing (..)
-import Control.Debounce exposing (..)
+import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Http exposing (..)
-import JsonDecode exposing (..)
+import Http
+import JsonDecode
 import Time
 import Util exposing (..)
 
 
-main : Program Never Model Msg
+main : Platform.Program () Model Msg
 main =
-    Html.program
+    Browser.element
         { init = init
         , view = view
         , update = update
-        , subscriptions = always Sub.none
+        , subscriptions = subscriptions
         }
+
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.none
 
 
 
@@ -28,9 +36,8 @@ main =
 type alias Model =
     { query : String
     , error : Maybe String
-    , debounceState : Control.State Msg
-    , data : List GiphyData
-    , selected : Maybe GiphyData
+    , data : List JsonDecode.GiphyData
+    , selected : Maybe JsonDecode.GiphyData
     }
 
 
@@ -38,16 +45,14 @@ type alias Model =
 -- initial model
 
 
-init : ( Model, Cmd Msg )
-init =
+init : () -> ( Model, Cmd Msg )
+init _ =
     ( { query = ""
       , error = Nothing
-      , debounceState = Control.initialState
       , data = []
       , selected = Maybe.Nothing
       }
     , perform (NewSearch "minions")
-      --Cmd.none
     )
 
 
@@ -57,19 +62,17 @@ init =
 
 type Msg
     = NewSearch String
-    | Debounce (Control Msg)
-    | NewGiphys (Result Error GiphyResult)
-    | GiphySelect GiphyData
+    | NewGiphys (Result Http.Error JsonDecode.GiphyResult)
+    | GiphySelect JsonDecode.GiphyData
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         NewSearch query ->
-            ( { model | query = query }, searchGiphys NewGiphys query )
-
-        Debounce control ->
-            Control.update (\newDebounceState -> { model | debounceState = newDebounceState }) model.debounceState control
+            ( { model | query = query }
+            , searchGiphys NewGiphys query
+            )
 
         NewGiphys result ->
             case result of
@@ -83,19 +86,38 @@ update msg model =
                     )
 
                 Err err ->
-                    ( { model | error = Just (toString err) }, Cmd.none )
+                    ( { model | error = toErrorString err }, Cmd.none )
 
         GiphySelect giphyData ->
             ( { model | selected = Just giphyData }, Cmd.none )
 
 
-searchGiphys : (Result Error GiphyResult -> msg) -> String -> Cmd msg
+searchGiphys : (Result Http.Error JsonDecode.GiphyResult -> msg) -> String -> Cmd msg
 searchGiphys resultToMessage query =
-    let
-        url =
-            "http://api.giphy.com/v1/gifs/search?q=" ++ query ++ "&limit=7&api_key=dc6zaTOxFJmzC"
-    in
-    Http.send resultToMessage (Http.get url decodeGiphyResult)
+    Http.get
+        { url = "http://api.giphy.com/v1/gifs/search?q=" ++ query ++ "&limit=7&api_key=dc6zaTOxFJmzC"
+        , expect = Http.expectJson resultToMessage JsonDecode.decodeGiphyResult
+        }
+
+
+toErrorString : Http.Error -> Maybe String
+toErrorString err =
+    Just <|
+        case err of
+            Http.BadUrl str ->
+                "Bad url " ++ str
+
+            Http.Timeout ->
+                "Request timed out"
+
+            Http.NetworkError ->
+                "Network error"
+
+            Http.BadStatus int ->
+                "Bad status " ++ String.fromInt int
+
+            Http.BadBody str ->
+                "Bad body " ++ str
 
 
 
@@ -119,16 +141,10 @@ searchBar =
         [ input
             [ placeholder "Search term .."
             , type_ "text"
-            , Html.Attributes.map debounce (onInput NewSearch)
+            , onInput NewSearch
             ]
             []
         ]
-
-
-debounce : Msg -> Msg
-debounce =
-    -- !! no parameter !!
-    Control.Debounce.trailing Debounce (1 * Time.second)
 
 
 viewError : Maybe String -> Html Msg
@@ -141,17 +157,17 @@ viewError error =
             span [] []
 
 
-viewList : List GiphyData -> Html Msg
+viewList : List JsonDecode.GiphyData -> Html Msg
 viewList data =
     ul [ class "col-md-4 list-group" ] (viewListItems data)
 
 
-viewListItems : List GiphyData -> List (Html Msg)
+viewListItems : List JsonDecode.GiphyData -> List (Html Msg)
 viewListItems data =
     List.map viewListItem data
 
 
-viewListItem : GiphyData -> Html Msg
+viewListItem : JsonDecode.GiphyData -> Html Msg
 viewListItem data =
     li [ class "list-group-item" ]
         [ div [ class "giphy-list media" ]
@@ -166,7 +182,7 @@ viewListItem data =
         ]
 
 
-viewDetail : Maybe GiphyData -> Html Msg
+viewDetail : Maybe JsonDecode.GiphyData -> Html Msg
 viewDetail maybeData =
     div [ class "giphy-detail col-md-8" ]
         [ case maybeData of
@@ -184,7 +200,7 @@ viewDetail maybeData =
                         [ a
                             [ class "btn btn-primary"
                             , role "button"
-                            , downloadAs data.slug
+                            , download data.slug
                             , href data.images.original.url
                             , title data.slug
                             , alt data.slug

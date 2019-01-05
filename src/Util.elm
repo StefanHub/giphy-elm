@@ -1,8 +1,8 @@
-module Util exposing (..)
+module Util exposing (perform, role)
 
-import Html exposing (..)
-import Html.Attributes exposing (..)
-import Task exposing (..)
+import Html
+import Html.Attributes
+import Task
 
 
 perform : msg -> Cmd msg
@@ -12,6 +12,6 @@ perform msg =
         |> Task.perform identity
 
 
-role : String -> Attribute msg
+role : String -> Html.Attribute msg
 role name =
-    attribute "role" name
+    Html.Attributes.attribute "role" name
